@@ -35,7 +35,13 @@ router.post('/generate', async (req, res) => {
       String(targetAudience).trim()
     );
 
-    const generatedText = await generateContent(prompt, generationConfig);
+    const generatedText = await generateContent(prompt, generationConfig, {
+      contentType,
+      topic: topic.trim(),
+      tone: resolvedTone,
+      keywords: resolvedKeywords,
+      targetAudience: String(targetAudience).trim(),
+    });
 
     const wordCount = generatedText.trim().split(/\s+/).length;
 
