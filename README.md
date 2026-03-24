@@ -81,15 +81,35 @@ This starts both the backend (port **3001**) and the Vite dev server (port **517
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
+## Deploying to Production
+
+To deploy as a single service (e.g., on Render):
+
+1. **Build command:** `npm run build` — installs all dependencies and compiles the React frontend to `client/dist`
+2. **Start command:** `npm start` — runs the Express server, which serves both the API and the compiled frontend
+
+Set these environment variables on your hosting platform:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+NODE_ENV=production
+PORT=3001
+# Optional: only required if the frontend is on a different domain
+ALLOWED_ORIGIN=https://your-production-domain.com
+```
+
+When `NODE_ENV=production`, the Express server automatically serves the built React files and handles client-side routing.
+
 ## Available Scripts
 
-| Command              | Description                                    |
-|----------------------|------------------------------------------------|
-| `npm run dev`        | Run frontend + backend concurrently            |
-| `npm run client`     | Run frontend only                              |
-| `npm run server`     | Run backend only (with nodemon)                |
-| `npm run build`      | Build the React frontend for production        |
-| `npm run install:all`| Install all dependencies (root + client + server) |
+| Command              | Description                                                |
+|----------------------|------------------------------------------------------------|
+| `npm run dev`        | Run frontend + backend concurrently                        |
+| `npm run client`     | Run frontend only                                          |
+| `npm run server`     | Run backend only (with nodemon)                            |
+| `npm run build`      | Install all dependencies and build the React frontend      |
+| `npm start`          | Start the server in production                             |
+| `npm run install:all`| Install all dependencies (root + client + server)          |
 
 ## API
 
