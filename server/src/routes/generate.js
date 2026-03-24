@@ -52,11 +52,15 @@ router.post('/generate', async (req, res) => {
   } catch (err) {
     console.error('[Route /generate] Error:', err.message);
 
-    if (err.message.includes('API_KEY') || err.message.includes('api key')) {
+    const rawMsg = err?.message;
+    const errMsg = typeof rawMsg === 'string' ? rawMsg : JSON.stringify(rawMsg ?? err);
+    const errMsgLower = errMsg.toLowerCase();
+
+    if (errMsgLower.includes('api_key') || errMsgLower.includes('api key')) {
       return res.status(503).json({ success: false, error: 'AI service unavailable. Check your API key configuration.' });
     }
 
-    return res.status(500).json({ success: false, error: err.message || 'Failed to generate content.' });
+    return res.status(500).json({ success: false, error: errMsg || 'Failed to generate content.' });
   }
 });
 

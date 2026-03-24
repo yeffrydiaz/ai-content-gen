@@ -19,14 +19,19 @@ export default function App() {
       if (data.success) {
         setResult(data);
       } else {
-        setError(data.error || 'An unexpected error occurred.');
+        const rawError = data.error;
+        setError(
+          rawError != null && typeof rawError === 'object'
+            ? JSON.stringify(rawError)
+            : rawError || 'An unexpected error occurred.',
+        );
       }
     } catch (err) {
-      const message =
+      const rawError =
         err.response?.data?.error ||
         err.message ||
         'Failed to connect to the server. Is the backend running?';
-      setError(message);
+      setError(typeof rawError === 'object' ? JSON.stringify(rawError) : rawError);
     } finally {
       setIsLoading(false);
     }
