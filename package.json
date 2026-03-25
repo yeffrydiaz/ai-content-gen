@@ -2,12 +2,16 @@
   "name": "ai-content-gen",
   "version": "1.0.0",
   "description": "AI-powered content generator using Gemini API",
+  "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "client": "cd client && npm run dev",
     "server": "cd server && npm run dev",
     "install:all": "npm install && cd client && npm install && cd ../server && npm install",
     "build": "cd client && npm ci && npm run build"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
