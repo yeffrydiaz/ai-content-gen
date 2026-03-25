@@ -2,13 +2,21 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import generateRoutes from './routes/generate.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const isProduction = process.env.NODE_ENV === 'production';
 
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: isProduction
+    ? (process.env.CLIENT_ORIGIN || false)
+    : (process.env.CLIENT_ORIGIN || 'http://localhost:5173'),
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 }));
@@ -29,6 +37,14 @@ app.use('/api', generateRoutes);
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+if (isProduction) {
+  const clientPath = path.resolve(__dirname, '../../client/dist');
+  app.use(express.static(clientPath));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(clientPath, 'index.html'));
+  });
+}
 
 app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);

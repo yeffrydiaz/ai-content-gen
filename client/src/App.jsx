@@ -19,13 +19,12 @@ export default function App() {
       if (data.success) {
         setResult(data);
       } else {
-        setError(data.error || 'An unexpected error occurred.');
+        const errMsg = data.error;
+        setError(typeof errMsg === 'string' ? errMsg : 'An unexpected error occurred.');
       }
     } catch (err) {
-      const message =
-        err.response?.data?.error ||
-        err.message ||
-        'Failed to connect to the server. Is the backend running?';
+      const raw = err.response?.data?.error ?? err.response?.data?.message ?? err.message;
+      const message = typeof raw === 'string' ? raw : 'Failed to connect to the server. Is the backend running?';
       setError(message);
     } finally {
       setIsLoading(false);
