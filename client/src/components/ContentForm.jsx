@@ -9,6 +9,33 @@ const TONE_OPTIONS = [
   { value: 'humorous', label: 'Humorous' },
 ];
 
+const TOPIC_MAX_LENGTH = 200;
+const AUDIENCE_MAX_LENGTH = 100;
+const KEYWORDS_MAX_LENGTH = 200;
+
+function validate(formData) {
+  const errors = {};
+  const topic = formData.topic.trim();
+
+  if (!topic) {
+    errors.topic = 'Topic is required.';
+  } else if (topic.length < 3) {
+    errors.topic = 'Topic must be at least 3 characters.';
+  } else if (topic.length > TOPIC_MAX_LENGTH) {
+    errors.topic = `Topic must be ${TOPIC_MAX_LENGTH} characters or fewer.`;
+  }
+
+  if (formData.targetAudience.trim().length > AUDIENCE_MAX_LENGTH) {
+    errors.targetAudience = `Target audience must be ${AUDIENCE_MAX_LENGTH} characters or fewer.`;
+  }
+
+  if (formData.keywords.trim().length > KEYWORDS_MAX_LENGTH) {
+    errors.keywords = `Keywords must be ${KEYWORDS_MAX_LENGTH} characters or fewer.`;
+  }
+
+  return errors;
+}
+
 export default function ContentForm({ onSubmit, isLoading }) {
   const [formData, setFormData] = useState({
     contentType: 'blog_post',
@@ -17,14 +44,26 @@ export default function ContentForm({ onSubmit, isLoading }) {
     targetAudience: '',
     keywords: '',
   });
+  const [errors, setErrors] = useState({});
 
   function handleChange(e) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
   }
 
   function handleSubmit(e) {
     e.preventDefault();
+    const fieldErrors = validate(formData);
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      return;
+    }
     const keywords = formData.keywords
       ? formData.keywords.split(',').map((k) => k.trim()).filter(Boolean)
       : [];
@@ -69,15 +108,17 @@ export default function ContentForm({ onSubmit, isLoading }) {
             Topic <span className="required">*</span>
           </label>
           <input
-            className="form__input"
+            className={`form__input${errors.topic ? ' form__input--error' : ''}`}
             id="topic"
             name="topic"
             type="text"
             placeholder="e.g., 10 Benefits of Remote Work"
             value={formData.topic}
             onChange={handleChange}
+            maxLength={TOPIC_MAX_LENGTH}
             required
           />
+          {errors.topic && <span className="form__error">{errors.topic}</span>}
         </div>
 
         {/* Tone */}
@@ -100,28 +141,32 @@ export default function ContentForm({ onSubmit, isLoading }) {
         <div className="form__group">
           <label className="form__label" htmlFor="targetAudience">Target Audience</label>
           <input
-            className="form__input"
+            className={`form__input${errors.targetAudience ? ' form__input--error' : ''}`}
             id="targetAudience"
             name="targetAudience"
             type="text"
             placeholder="e.g., Marketing professionals"
             value={formData.targetAudience}
             onChange={handleChange}
+            maxLength={AUDIENCE_MAX_LENGTH}
           />
+          {errors.targetAudience && <span className="form__error">{errors.targetAudience}</span>}
         </div>
 
         {/* Keywords */}
         <div className="form__group">
           <label className="form__label" htmlFor="keywords">Keywords</label>
           <input
-            className="form__input"
+            className={`form__input${errors.keywords ? ' form__input--error' : ''}`}
             id="keywords"
             name="keywords"
             type="text"
             placeholder="Enter keywords separated by commas"
             value={formData.keywords}
             onChange={handleChange}
+            maxLength={KEYWORDS_MAX_LENGTH}
           />
+          {errors.keywords && <span className="form__error">{errors.keywords}</span>}
         </div>
 
         <button type="submit" className="btn btn--primary" disabled={isLoading}>

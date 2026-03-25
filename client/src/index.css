@@ -130,6 +130,20 @@ body {
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
 }
 
+.form__input--error {
+  border-color: var(--color-error);
+}
+
+.form__input--error:focus {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.2);
+}
+
+.form__error {
+  color: var(--color-error);
+  font-size: 0.8rem;
+}
+
 .form__select option {
   background: var(--color-surface-2);
 }
