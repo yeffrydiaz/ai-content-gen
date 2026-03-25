@@ -7,7 +7,7 @@ const router = Router();
 const VALID_CONTENT_TYPES = ['blog_post', 'social_media'];
 const VALID_TONES = ['professional', 'casual', 'friendly', 'authoritative', 'inspirational', 'humorous'];
 
-router.post('/generate', async (req, res) => {
+router.post('/api/generate', async (req, res) => {
   const { contentType, topic, tone = 'professional', keywords = [], targetAudience = '' } = req.body;
 
   if (!contentType || !VALID_CONTENT_TYPES.includes(contentType)) {
