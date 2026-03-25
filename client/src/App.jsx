@@ -1,41 +1,10 @@
-import { useState } from 'react';
-import axios from 'axios';
 import Header from './components/Header.jsx';
 import ContentForm from './components/ContentForm.jsx';
 import ContentResult from './components/ContentResult.jsx';
+import useContentStore from './store/contentStore.js';
 
 export default function App() {
-  const [result, setResult] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  async function handleSubmit(formData) {
-    setIsLoading(true);
-    setError('');
-    setResult(null);
-
-    try {
-      const { data } = await axios.post('/api/generate', formData);
-      if (data.success) {
-        setResult(data);
-      } else {
-        setError(data.error || 'An unexpected error occurred.');
-      }
-    } catch (err) {
-      const message =
-        err.response?.data?.error ||
-        err.message ||
-        'Failed to connect to the server. Is the backend running?';
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  function handleClear() {
-    setResult(null);
-    setError('');
-  }
+  const { result, isLoading, error, handleSubmit, handleClear } = useContentStore();
 
   return (
     <div className="app">
