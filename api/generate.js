@@ -96,7 +96,7 @@ export default async function handler(req, res) {
       metadata: {
         tone: resolvedTone,
         targetAudience: resolvedTargetAudience || 'General audience',
-        wordCount: content.split(/\s+/).length,
+        wordCount: content.split(/\s+/).filter(Boolean).length,
       },
     });
   } catch (error) {
