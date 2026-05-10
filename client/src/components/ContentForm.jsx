@@ -9,6 +9,8 @@ const TONE_OPTIONS = [
   { value: 'humorous', label: 'Humorous' },
 ];
 
+const STORAGE_KEY = 'gemini_api_key';
+
 export default function ContentForm({ onSubmit, isLoading }) {
   const [formData, setFormData] = useState({
     contentType: 'blog_post',
@@ -17,10 +19,22 @@ export default function ContentForm({ onSubmit, isLoading }) {
     targetAudience: '',
     keywords: '',
   });
+  const [apiKeyExpanded, setApiKeyExpanded] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem(STORAGE_KEY) || '');
 
   function handleChange(e) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function handleApiKeyChange(e) {
+    const val = e.target.value;
+    setGeminiApiKey(val);
+    if (val.trim()) {
+      localStorage.setItem(STORAGE_KEY, val.trim());
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
   }
 
   function handleSubmit(e) {
@@ -28,7 +42,7 @@ export default function ContentForm({ onSubmit, isLoading }) {
     const keywords = formData.keywords
       ? formData.keywords.split(',').map((k) => k.trim()).filter(Boolean)
       : [];
-    onSubmit({ ...formData, keywords });
+    onSubmit({ ...formData, keywords, geminiApiKey: geminiApiKey.trim() || undefined });
   }
 
   return (
@@ -122,6 +136,56 @@ export default function ContentForm({ onSubmit, isLoading }) {
             value={formData.keywords}
             onChange={handleChange}
           />
+        </div>
+
+        {/* API Key */}
+        <div className="form__group">
+          <button
+            type="button"
+            className="api-key-toggle"
+            onClick={() => setApiKeyExpanded((v) => !v)}
+            aria-expanded={apiKeyExpanded}
+          >
+            <span>🔑 Use your own Gemini API key</span>
+            <span className="api-key-toggle__arrow">{apiKeyExpanded ? '▲' : '▼'}</span>
+            {geminiApiKey && <span className="api-key-active-badge">Active</span>}
+          </button>
+          {apiKeyExpanded && (
+            <div className="api-key-panel">
+              <p className="api-key-hint">
+                Enter your own{' '}
+                <a
+                  href="https://aistudio.google.com/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="api-key-link"
+                >
+                  Google AI Studio API key
+                </a>{' '}
+                to use your personal quota. It is stored only in your browser.
+              </p>
+              <input
+                className="form__input"
+                id="geminiApiKey"
+                name="geminiApiKey"
+                type="password"
+                placeholder="AIza…"
+                value={geminiApiKey}
+                onChange={handleApiKeyChange}
+                autoComplete="off"
+                spellCheck={false}
+              />
+              {geminiApiKey && (
+                <button
+                  type="button"
+                  className="btn btn--secondary api-key-clear"
+                  onClick={() => { setGeminiApiKey(''); localStorage.removeItem(STORAGE_KEY); }}
+                >
+                  Remove key
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         <button type="submit" className="btn btn--primary" disabled={isLoading}>
