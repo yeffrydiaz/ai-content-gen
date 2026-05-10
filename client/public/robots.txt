@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
 
-# Replace the domain below with your actual deployment URL
-Sitemap: https://your-domain.com/sitemap.xml
+Sitemap: https://gen.webnow.company/sitemap.xml
