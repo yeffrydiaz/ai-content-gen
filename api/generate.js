@@ -82,11 +82,16 @@ export default async function handler(req, res) {
 
     if (response.status === 429) {
       const retryMatch = (payload.error?.message || '').match(/retry in ([\d.]+)s/i);
-      const retryInfo = retryMatch ? ` Please try again in about ${Math.ceil(parseFloat(retryMatch[1]))} seconds.` : ' Please try again in a moment.';
-      return res.status(429).json({
-        success: false,
-        error: `The AI service is temporarily unavailable due to high demand.${retryInfo}${!geminiApiKey?.trim() ? ' You can also provide your own Gemini API key to use your personal quota.' : ''}`,
-      });
+      const parts = ['The AI service is temporarily unavailable due to high demand.'];
+      if (retryMatch) {
+        parts.push(`Please try again in about ${Math.ceil(parseFloat(retryMatch[1]))} seconds.`);
+      } else {
+        parts.push('Please try again in a moment.');
+      }
+      if (!geminiApiKey?.trim()) {
+        parts.push('You can also provide your own Gemini API key to use your personal quota.');
+      }
+      return res.status(429).json({ success: false, error: parts.join(' ') });
     }
 
     if (!response.ok || payload.error) {
