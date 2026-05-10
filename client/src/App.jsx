@@ -4,6 +4,26 @@ import Header from './components/Header.jsx';
 import ContentForm from './components/ContentForm.jsx';
 import ContentResult from './components/ContentResult.jsx';
 
+function toErrorMessage(value, fallback) {
+  if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+
+  if (value && typeof value === 'object') {
+    if (typeof value.message === 'string' && value.message.trim()) {
+      return value.message;
+    }
+
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return fallback;
+    }
+  }
+
+  return fallback;
+}
+
 export default function App() {
   const [result, setResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,13 +39,13 @@ export default function App() {
       if (data.success) {
         setResult(data);
       } else {
-        setError(data.error || 'An unexpected error occurred.');
+        setError(toErrorMessage(data.error ?? data.message ?? data, 'An unexpected error occurred.'));
       }
     } catch (err) {
-      const message =
-        err.response?.data?.error ||
-        err.message ||
-        'Failed to connect to the server. Is the backend running?';
+      const message = toErrorMessage(
+        err.response?.data?.error ?? err.response?.data?.message ?? err.response?.data ?? err.message,
+        'Failed to connect to the server. Is the backend running?'
+      );
       setError(message);
     } finally {
       setIsLoading(false);
