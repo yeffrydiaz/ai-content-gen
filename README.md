@@ -8,7 +8,7 @@ An AI-powered writing assistant that helps marketers generate blog posts and soc
 |----------|-----------------------------------------|
 | Frontend | React 18 + Vite 6                       |
 | Backend  | Node.js / Express                       |
-| AI       | Google Gemini 1.5 Flash                 |
+| AI       | Google Gemini (configurable model)      |
 | Queuing  | p-queue (concurrency + interval limits) |
 | Rate limiting | express-rate-limit                 |
 
@@ -62,6 +62,7 @@ Edit `server/.env` and set your Gemini API key:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.0-flash
 PORT=3001
 RATE_LIMIT_WINDOW_MS=60000
 RATE_LIMIT_MAX_REQUESTS=10
@@ -70,6 +71,13 @@ QUEUE_INTERVAL=1000
 ```
 
 > Get a free API key at [Google AI Studio](https://aistudio.google.com/app/apikey).
+> If your key does not support the default model, set `GEMINI_MODEL` to one available in your account.
+
+For frontend deployments that do not host `/api` on the same domain, set:
+
+```env
+VITE_API_BASE_URL=https://your-backend-domain.com
+```
 
 ### 3. Run in development mode
 
