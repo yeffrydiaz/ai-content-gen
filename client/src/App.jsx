@@ -71,7 +71,7 @@ export default function App() {
   return (
     <div className="app">
       <Header />
-      <div className="container">
+      <main className="container">
         <ContentForm onSubmit={handleSubmit} isLoading={isLoading} />
 
         {error && (
@@ -95,7 +95,7 @@ export default function App() {
             onClear={handleClear}
           />
         )}
-      </div>
+      </main>
     </div>
   );
 }
