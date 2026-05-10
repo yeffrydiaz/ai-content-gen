@@ -3,6 +3,8 @@ import { buildPrompt } from '../server/src/utils/promptBuilder.js';
 const VALID_CONTENT_TYPES = ['blog_post', 'social_media'];
 const VALID_TONES = ['professional', 'casual', 'friendly', 'authoritative', 'inspirational', 'humorous'];
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const DEFAULT_GEMINI_RETRY_ATTEMPTS = 2;
+const MAX_RETRY_WAIT_SECONDS = 60;
 
 function extractGeneratedText(payload) {
   return (payload.candidates || [])
@@ -11,6 +13,78 @@ function extractGeneratedText(payload) {
     .filter(Boolean)
     .join('\n')
     .trim();
+}
+
+function parseRetryAfterSeconds(retryAfterValue) {
+  if (!retryAfterValue) {
+    return null;
+  }
+
+  const parsedSeconds = Number.parseFloat(retryAfterValue);
+  if (Number.isFinite(parsedSeconds)) {
+    return Math.max(1, Math.min(MAX_RETRY_WAIT_SECONDS, Math.ceil(parsedSeconds)));
+  }
+
+  const parsedDateMs = Date.parse(retryAfterValue);
+  if (!Number.isNaN(parsedDateMs)) {
+    const seconds = Math.ceil((parsedDateMs - Date.now()) / 1000);
+    return Math.max(1, Math.min(MAX_RETRY_WAIT_SECONDS, seconds));
+  }
+
+  return null;
+}
+
+function inferRetryDelaySeconds(response, payload, attempt) {
+  const headerRetry = parseRetryAfterSeconds(response.headers.get('retry-after'));
+  if (headerRetry) {
+    return headerRetry;
+  }
+
+  const retryMatch = (payload?.error?.message || '').match(/retry in ([\d.]+)s/i);
+  if (retryMatch) {
+    return Math.max(1, Math.min(MAX_RETRY_WAIT_SECONDS, Math.ceil(parseFloat(retryMatch[1]))));
+  }
+
+  return Math.min(MAX_RETRY_WAIT_SECONDS, (attempt + 1) * 5);
+}
+
+async function requestGeminiWithRetries({ apiKey, prompt, generationConfig, maxRetries }) {
+  let response;
+  let payload = {};
+  let lastRetryDelaySeconds = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: generationConfig.temperature ?? 0.8,
+            topK: generationConfig.topK ?? 40,
+            topP: generationConfig.topP ?? 0.95,
+            maxOutputTokens: generationConfig.maxOutputTokens ?? 1024,
+          },
+        }),
+      }
+    );
+
+    payload = await response.json().catch(() => ({}));
+
+    if (response.status !== 429 || attempt === maxRetries) {
+      return { response, payload, lastRetryDelaySeconds };
+    }
+
+    lastRetryDelaySeconds = inferRetryDelaySeconds(response, payload, attempt);
+    await new Promise((resolve) => setTimeout(resolve, lastRetryDelaySeconds * 1000));
+  }
+
+  return { response, payload, lastRetryDelaySeconds };
 }
 
 export default async function handler(req, res) {
@@ -48,6 +122,10 @@ export default async function handler(req, res) {
       ? keywords.split(',').map((keyword) => keyword.trim()).filter(Boolean)
       : [];
   const resolvedTargetAudience = typeof targetAudience === 'string' ? targetAudience.trim() : '';
+  const maxRetries = Math.max(
+    0,
+    Number.parseInt(process.env.GEMINI_RETRY_ATTEMPTS || '', 10) || DEFAULT_GEMINI_RETRY_ATTEMPTS
+  );
 
   try {
     const { prompt, generationConfig } = buildPrompt(
@@ -58,33 +136,19 @@ export default async function handler(req, res) {
       resolvedTargetAudience
     );
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': resolvedApiKey,
-        },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: generationConfig.temperature ?? 0.8,
-            topK: generationConfig.topK ?? 40,
-            topP: generationConfig.topP ?? 0.95,
-            maxOutputTokens: generationConfig.maxOutputTokens ?? 1024,
-          },
-        }),
-      }
-    );
-
-    const payload = await response.json();
+    const { response, payload, lastRetryDelaySeconds } = await requestGeminiWithRetries({
+      apiKey: resolvedApiKey,
+      prompt,
+      generationConfig,
+      maxRetries,
+    });
 
     if (response.status === 429) {
-      const retryMatch = (payload.error?.message || '').match(/retry in ([\d.]+)s/i);
+      const retryDelaySeconds = inferRetryDelaySeconds(response, payload, maxRetries);
+      const retryHintSeconds = retryDelaySeconds || lastRetryDelaySeconds;
       const parts = ['The AI service is temporarily unavailable due to high demand.'];
-      if (retryMatch) {
-        parts.push(`Please try again in about ${Math.ceil(parseFloat(retryMatch[1]))} seconds.`);
+      if (retryHintSeconds) {
+        parts.push(`Please try again in about ${retryHintSeconds} seconds.`);
       } else {
         parts.push('Please try again in a moment.');
       }
