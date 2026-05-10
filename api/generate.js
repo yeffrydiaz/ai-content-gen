@@ -52,11 +52,12 @@ export default async function handler(req, res) {
     );
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-goog-api-key': process.env.GEMINI_API_KEY,
         },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -96,10 +97,11 @@ export default async function handler(req, res) {
       },
     });
   } catch (error) {
-    console.error('[Vercel /api/generate] Error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to generate content.';
+    console.error('[Vercel /api/generate] Error:', message);
     return res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to generate content.',
+      error: message,
     });
   }
 }
