@@ -4,7 +4,7 @@ const VALID_CONTENT_TYPES = ['blog_post', 'social_media'];
 const VALID_TONES = ['professional', 'casual', 'friendly', 'authoritative', 'inspirational', 'humorous'];
 const GEMINI_MODEL = 'gemini-1.5-flash';
 
-function getGeneratedText(payload) {
+function extractGeneratedText(payload) {
   return (payload.candidates || [])
     .flatMap((candidate) => candidate.content?.parts || [])
     .map((part) => part.text)
@@ -33,7 +33,8 @@ export default async function handler(req, res) {
   }
 
   if (!process.env.GEMINI_API_KEY) {
-    return res.status(503).json({ success: false, error: 'AI service unavailable. Check your API key configuration.' });
+    console.error('[Vercel /api/generate] Missing GEMINI_API_KEY');
+    return res.status(503).json({ success: false, error: 'AI service temporarily unavailable.' });
   }
 
   const resolvedTone = VALID_TONES.includes(tone) ? tone : 'professional';
@@ -82,7 +83,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const content = getGeneratedText(payload);
+    const content = extractGeneratedText(payload);
 
     if (!content) {
       return res.status(502).json({ success: false, error: 'AI service returned an empty response.' });

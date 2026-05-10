@@ -39,11 +39,13 @@ export default function App() {
       if (data.success) {
         setResult(data);
       } else {
-        setError(toErrorMessage(data.error ?? data.message ?? data, 'An unexpected error occurred.'));
+        const apiError = data.error ?? data.message ?? data;
+        setError(toErrorMessage(apiError, 'An unexpected error occurred.'));
       }
     } catch (err) {
+      const apiError = err.response?.data?.error ?? err.response?.data?.message ?? err.response?.data ?? err.message;
       const message = toErrorMessage(
-        err.response?.data?.error ?? err.response?.data?.message ?? err.response?.data ?? err.message,
+        apiError,
         'Failed to connect to the server. Is the backend running?'
       );
       setError(message);
