@@ -19,7 +19,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: 'Method not allowed.' });
   }
 
-  const { contentType, topic, tone = 'professional', keywords = [], targetAudience = '' } = req.body || {};
+  const { contentType, topic, tone = 'professional', keywords = [], targetAudience = '', geminiApiKey } = req.body || {};
+
+  const resolvedApiKey = (typeof geminiApiKey === 'string' && geminiApiKey.trim())
+    ? geminiApiKey.trim()
+    : process.env.GEMINI_API_KEY;
 
   if (!contentType || !VALID_CONTENT_TYPES.includes(contentType)) {
     return res.status(400).json({
@@ -32,9 +36,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, error: 'topic is required and must be a non-empty string.' });
   }
 
-  if (!process.env.GEMINI_API_KEY) {
-    console.error('[Vercel /api/generate] AI service configuration error');
-    return res.status(503).json({ success: false, error: 'AI service temporarily unavailable.' });
+  if (!resolvedApiKey) {
+    console.error('[Vercel /api/generate] No Gemini API key available');
+    return res.status(503).json({ success: false, error: 'No API key configured. Please provide your own Gemini API key.' });
   }
 
   const resolvedTone = VALID_TONES.includes(tone) ? tone : 'professional';
@@ -60,7 +64,7 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': process.env.GEMINI_API_KEY,
+          'x-goog-api-key': resolvedApiKey,
         },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -75,6 +79,15 @@ export default async function handler(req, res) {
     );
 
     const payload = await response.json();
+
+    if (response.status === 429) {
+      const retryMatch = (payload.error?.message || '').match(/retry in ([\d.]+)s/i);
+      const retryInfo = retryMatch ? ` Please try again in about ${Math.ceil(parseFloat(retryMatch[1]))} seconds.` : ' Please try again in a moment.';
+      return res.status(429).json({
+        success: false,
+        error: `The AI service is temporarily unavailable due to high demand.${retryInfo}${!geminiApiKey?.trim() ? ' You can also provide your own Gemini API key to use your personal quota.' : ''}`,
+      });
+    }
 
     if (!response.ok || payload.error) {
       return res.status(response.status || 500).json({
