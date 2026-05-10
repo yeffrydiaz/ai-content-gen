@@ -33,7 +33,7 @@ export default async function handler(req, res) {
   }
 
   if (!process.env.GEMINI_API_KEY) {
-    console.error('[Vercel /api/generate] Missing GEMINI_API_KEY');
+    console.error('[Vercel /api/generate] AI service configuration error');
     return res.status(503).json({ success: false, error: 'AI service temporarily unavailable.' });
   }
 

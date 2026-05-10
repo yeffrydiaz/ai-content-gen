@@ -24,6 +24,14 @@ function toErrorMessage(value, fallback) {
   return fallback;
 }
 
+function getApiErrorValue(data) {
+  if (!data || typeof data !== 'object') {
+    return data;
+  }
+
+  return data.error ?? data.message ?? data;
+}
+
 export default function App() {
   const [result, setResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,11 +47,10 @@ export default function App() {
       if (data.success) {
         setResult(data);
       } else {
-        const apiError = data.error ?? data.message ?? data;
-        setError(toErrorMessage(apiError, 'An unexpected error occurred.'));
+        setError(toErrorMessage(getApiErrorValue(data), 'An unexpected error occurred.'));
       }
     } catch (err) {
-      const apiError = err.response?.data?.error ?? err.response?.data?.message ?? err.response?.data ?? err.message;
+      const apiError = getApiErrorValue(err.response?.data) ?? err.message;
       const message = toErrorMessage(
         apiError,
         'Failed to connect to the server. Is the backend running?'
