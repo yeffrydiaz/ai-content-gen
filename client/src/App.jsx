@@ -4,6 +4,8 @@ import Header from './components/Header.jsx';
 import ContentForm from './components/ContentForm.jsx';
 import ContentResult from './components/ContentResult.jsx';
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+
 function toErrorMessage(value, fallback) {
   if (typeof value === 'string' && value.trim()) {
     return value;
@@ -43,7 +45,7 @@ export default function App() {
     setResult(null);
 
     try {
-      const { data } = await axios.post('/api/generate', formData);
+      const { data } = await axios.post(`${API_BASE_URL}/api/generate`, formData);
       if (data.success) {
         setResult(data);
       } else {

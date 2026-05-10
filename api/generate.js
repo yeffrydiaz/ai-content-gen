@@ -2,7 +2,7 @@ import { buildPrompt } from '../server/src/utils/promptBuilder.js';
 
 const VALID_CONTENT_TYPES = ['blog_post', 'social_media'];
 const VALID_TONES = ['professional', 'casual', 'friendly', 'authoritative', 'inspirational', 'humorous'];
-const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
 function extractGeneratedText(payload) {
   return (payload.candidates || [])
