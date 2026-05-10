@@ -39,8 +39,10 @@ export default async function handler(req, res) {
   const resolvedTone = VALID_TONES.includes(tone) ? tone : 'professional';
   const resolvedKeywords = Array.isArray(keywords)
     ? keywords.map((keyword) => String(keyword).trim()).filter(Boolean)
-    : String(keywords).split(',').map((keyword) => keyword.trim()).filter(Boolean);
-  const resolvedTargetAudience = String(targetAudience).trim();
+    : typeof keywords === 'string'
+      ? keywords.split(',').map((keyword) => keyword.trim()).filter(Boolean)
+      : [];
+  const resolvedTargetAudience = typeof targetAudience === 'string' ? targetAudience.trim() : '';
 
   try {
     const { prompt, generationConfig } = buildPrompt(
